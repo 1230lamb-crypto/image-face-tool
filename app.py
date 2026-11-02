@@ -228,11 +228,16 @@ with tab4:
     ms = p3.slider("最小人臉尺寸 (px)", 20, 300, 40)
     faces = detect_faces(bgr, sf, nb, ms)
     canvas = bgr.copy()
-    t = max(2, bgr.shape[1] // 300)
+    ih, iw = bgr.shape[:2]
+    t = max(1, iw // 400)                       # 線條粗細
+    fs = max(0.35, min(iw, ih) / 900)           # 字體隨圖片尺寸縮放
     for i, ((x, y, w, h), raw, conf) in enumerate(faces, 1):
         cv2.rectangle(canvas, (x, y), (x + w, y + h), (0, 200, 0), t)
-        cv2.putText(canvas, f"#{i} {conf:.2f}", (x, max(20, y - 8)),
-                    cv2.FONT_HERSHEY_SIMPLEX, t * 0.35 + 0.4, (0, 200, 0), t)
+        label = f"#{i} {conf:.2f}"
+        (tw, th), base = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, fs, t)
+        ty = y - 4 if y - th - base - 4 >= 0 else y + th + 4   # 上方放不下就放框內
+        cv2.rectangle(canvas, (x, ty - th - base // 2), (x + tw, ty + base // 2), (0, 200, 0), -1)
+        cv2.putText(canvas, label, (x, ty), cv2.FONT_HERSHEY_SIMPLEX, fs, (255, 255, 255), t)
     st.image(cv2.cvtColor(canvas, cv2.COLOR_BGR2RGB), width=IMG_W)
     if faces:
         st.success(f"偵測到 {len(faces)} 張人臉")
